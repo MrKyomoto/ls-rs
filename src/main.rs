@@ -1,18 +1,19 @@
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use owo_colors::OwoColorize;
+use serde::Serialize;
 use strum::Display;
 use tabled::{settings::{object::{Columns, Rows}, Color, Style}, Table, Tabled};
-use std::{fs, path::{Path, PathBuf}};
+use std::{fs, path::{PathBuf}};
 
-#[derive(Debug,Display)]
+#[derive(Debug,Display,Serialize)]
 enum EntryType {
     File,
     Dir,  
 }
 
 // store meta data
-#[derive(Debug, Tabled)]
+#[derive(Debug, Tabled,Serialize)]
 struct FileEntry{
     #[tabled{rename="Name"}]
     name:String,
@@ -27,7 +28,9 @@ struct FileEntry{
 #[derive(Debug,Parser)] // 为一个结构体派生 Parser trait 就可以根据结构体的字段自动生成命令行参数解析器
 #[command(version,about,long_about = "Better Ls command")] // clap 库中用于自定义命令行参数解析行为的属性（attribute），主要用于为命令行工具添加版本信息的支持
 struct CLI{
-    path:Option<PathBuf>
+    path:Option<PathBuf>,
+    #[arg(short,long)]
+    json: bool,
 }
 
 fn main() {
@@ -40,15 +43,17 @@ fn main() {
 
     if let Ok(exist) = fs::exists(&path){
         if exist {
-            let files = get_files(&path);
-            let mut table = Table::new(files);
-            table.with(Style::rounded());
-            table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
-            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(3), Color::FG_BRIGHT_YELLOW);
-            table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
-            println!("{}",table);
-        }
+            if cli.json{
+                let files = get_files(&path);
+                println!(
+                    "{}",
+                    serde_json::to_string(&files).unwrap_or("cannot parse json".to_string())
+                );
+            }
+            else{
+                print_table(path);
+            }
+       }
         else {
             println!("{}","Path does not exist".red());
         }
@@ -59,7 +64,7 @@ fn main() {
     // println!("{}",path.display());
 }
 
-fn get_files(path:&Path) -> Vec<FileEntry>{
+fn get_files(path:&PathBuf) -> Vec<FileEntry>{
     let mut data = Vec::default();
     if let Ok(read_dir) = fs::read_dir(path){
         for entry in read_dir{
@@ -93,4 +98,16 @@ fn map_data(file: fs::DirEntry,data: &mut Vec<FileEntry>){
         }
     );
     }
+}
+
+fn print_table(path:PathBuf){
+            let files = get_files(&path);
+            let mut table = Table::new(files);
+            table.with(Style::rounded());
+            table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
+            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
+            table.modify(Columns::one(3), Color::FG_BRIGHT_YELLOW);
+            table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
+            println!("{}",table);
+ 
 }
