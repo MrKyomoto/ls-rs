@@ -11,7 +11,15 @@ A better ls by rust
 
 - eg.
 `cargo run`
+---
 `cargo run -- src`
+---
 `cargo run -- -j`
+---
 `cargo run -- --json`
+---
 `cargo run -- -V`
+
+## Next step
+- [ ] support pointed-sort-method
+- [ ] support display more metadata
