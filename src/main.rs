@@ -28,7 +28,10 @@ struct FileEntry{
 #[derive(Debug,Parser)] // 为一个结构体派生 Parser trait 就可以根据结构体的字段自动生成命令行参数解析器
 #[command(version,about,long_about = "Better Ls command")] // clap 库中用于自定义命令行参数解析行为的属性（attribute），主要用于为命令行工具添加版本信息的支持
 struct CLI{
+    /// The path of ls, if not given, the default path is the root dir of current working space 
+    // #[arg(short,long)]
     path:Option<PathBuf>,
+    /// Print the json format of the file
     #[arg(short,long)]
     json: bool,
 }
@@ -45,11 +48,13 @@ fn main() {
         if exist {
             if cli.json{
                 let files = get_files(&path);
-                println!(
-                    "{}",
-                    serde_json::to_string(&files).unwrap_or("cannot parse json".to_string())
-                );
-            }
+                for file in files{
+                    println!(
+                        "{}",
+                        serde_json::to_string(&file).unwrap_or("cannot parse json".to_string())
+                    );
+                }
+           }
             else{
                 print_table(path);
             }
